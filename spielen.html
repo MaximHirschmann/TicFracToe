@@ -1,0 +1,363 @@
+<html>
+    <head>
+        <title>TicFracToe</title>
+        <link rel="stylesheet" href="start.css">
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+        <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+        <script type='text/javascript'>
+            // buchstabe dessen Feld angeklickt werden kann, "" steht für alle
+            var enabled = "";
+            // map um buchstaben in indizes zu formen
+            var values = {"a":0, "b":1, "c":2, "d":3, "e":4, "f":5, "g":6, "h":7, "i":8};
+            // darstellung des Boards, ein Array entspricht einem 3x3 Block
+            var board = [
+                ["","","","","","","","",""],
+                ["","","","","","","","",""],
+                ["","","","","","","","",""],
+                ["","","","","","","","",""],
+                ["","","","","","","","",""],
+                ["","","","","","","","",""],
+                ["","","","","","","","",""],
+                ["","","","","","","","",""],
+                ["","","","","","","","",""],
+            ];
+            // darstellung der Sieger der 3x3 Felder
+            var wins = ["","","","","","","","",""];
+            var end = false;
+            /* Eingabe: b für board, ein 3x3 Feld in Form eines Arrays mit 9 Werten
+                        player ("X" oder "O") auf dessen Sieg überpr+ft werden soll
+            Funktion ermittelt ob player auf dem 3x3 Feld gewonnen hat
+            Ausgabe: true wenn ja, false wenn nein*/
+            function isWin(b, player) {
+                if ((b[0] == player && b[3] == player && b[6] == player) // vertikal
+                || (b[1] == player && b[4] == player && b[7] == player)
+                || (b[2] == player && b[5] == player && b[8] == player)
+                || (b[0] == player && b[1] == player && b[2] == player) // horizontal
+                || (b[3] == player && b[4] == player && b[5] == player)
+                || (b[6] == player && b[7] == player && b[8] == player)
+                || (b[0] == player && b[4] == player && b[8] == player) // diagonal
+                || (b[2] == player && b[4] == player && b[6] == player)
+                ) {
+                    return true;
+                }
+                return false;
+            }
+            /* Eingabe: b für board, ein 3x3 Feld in Form eines Arrays mit 9 Werten
+            Funktion ermittelt ob dieses Feld vollkommen besetzt ist
+            Ausgabe: true wenn ja, false wenn nein*/
+            function isFull(b) {
+                for (i of b) {
+                    if (i == "") {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            /* Funktion setzt alle Werte zurück und beginnt das Spiel von vorne*/
+            function restart() {
+                // setze divs zurück
+                document.getElementById("spieler").innerHTML = "Spieler X am Zug";
+                document.getElementById("zug").innerHTML = "Zug: 0";
+                // alle 3x3 Felder auswählbar
+                var enabled = "";
+                // alle Zellen leer
+                board = [
+                    ["","","","","","","","",""],
+                    ["","","","","","","","",""],
+                    ["","","","","","","","",""],
+                    ["","","","","","","","",""],
+                    ["","","","","","","","",""],
+                    ["","","","","","","","",""],
+                    ["","","","","","","","",""],
+                    ["","","","","","","","",""],
+                    ["","","","","","","","",""],
+                ];
+                wins = ["","","","","","","","",""];
+                for (char of ["a","b","c","d","e","f","g","h","i"]) {
+                    // alle Felder auswählbar
+                    document.getElementById("small "+char).className = "small "+char+" on";
+                    // keine Sieger der 3x3 Felder
+                    document.getElementsByClassName("small "+char)[0].removeAttribute("winner");
+                    // keine Werte in den Zellen
+                    for (element of document.getElementsByClassName("cell")) {
+                        element.innerHTML = "";
+                    }
+                }
+            }
+            /*Eingabe:  element: Das DOM des HTML-Objektes von dem die Funktion aufgerufen wurde
+            Funktion setzt wenn nach Regeln möglich X oder O in Zellen, prüft ob das Spiel vorbei,
+            schaut welches Feld als nächstes besetzt werden kann und aktualisiert die Darstellung
+            Ausgabe: keine
+            */
+            function place(element, bigBoard, smallBoard) {
+                if (end) {
+                    end = false;
+                    restart();
+                }
+                else {
+                    var fehler = document.getElementById("fehler");
+                    fehler.innerHTML = "";
+                    // wenn angeklickte Zelle in einem Feld ist, welches bespielbar ist
+                    if (enabled === "" || enabled === bigBoard || document.getElementById("small "+bigBoard).className == "small "+bigBoard+" on") {
+                        // wenn die Zelle leer
+                        if (board[values[bigBoard]][values[smallBoard]] == "") {
+                            // welcher Spieler dran
+                            var zug = document.getElementById("zug").innerHTML;
+                            var i = parseInt(zug[zug.length-2]+zug[zug.length-1]);
+                            var player = "O";
+                            if (i%2 == 0) {
+                                player = "X";
+                            }
+                            // erhöhe Zug um 1
+                            i++;
+                            document.getElementById("zug").innerHTML = "Zug " + i;
+                            if (player == "O") {
+                                document.getElementById("spieler").innerHTML = "Spieler X am Zug";
+                            }
+                            else {
+                                document.getElementById("spieler").innerHTML = "Spieler O am Zug";
+                            }
+                            // setze X oder O in die Zelle
+                            board[values[bigBoard]][values[smallBoard]] = player;
+                            element.innerHTML = player;
+                            // falls auf dem 3x3 Feld auf welches gerade gesetzt wurde ein Spieler das Feld gewonnen hat
+                            if (isWin(board[values[bigBoard]], player)) {
+                                // stelle X oder O groß dar
+                                wins[values[bigBoard]] = player;
+                                document.getElementsByClassName("small "+bigBoard)[0].setAttribute("winner", player);
+                            }
+                            // falls alle Felder auf dem 3x3 Feld welches als nächsten dran wäre voll sind, dann markiere das 3x3 Feld
+                            else if (isFull(board[values[bigBoard]])){
+                                // 0 steht für ein volles aber nicht von "X" oder "O" gewonnenes 3x3 Feld
+                                wins[values[bigBoard]] = "0";
+                            }
+                            // ein 3x3 Feld steht für den nächsten Zug zur Verfügung
+                            if (wins[values[smallBoard]] == ""){
+                                enabled = smallBoard;
+                                for (char of ["a","b","c","d","e","f","g","h","i"]) {
+                                    if (char == enabled) {
+                                        document.getElementById("small "+char).className = "small "+char+" on";
+                                    }
+                                    else {
+                                        document.getElementById("small "+char).className = "small "+char;
+                                    }
+                                }
+                            }
+                            // alle möglichen 3x3 Felder stehen zur Verfüngung
+                            else {
+                                for (char of ["a","b","c","d","e","f","g","h","i"]) {
+                                    if (wins[values[char]] == "") {
+                                        document.getElementById("small "+char).className = "small "+char+" on";
+                                    }
+                                    else {
+                                        document.getElementById("small "+char).className = "small "+char;
+                                    }
+                                }
+                            }
+                            // falls der Spieler gewonnen hat, Spiel vorbei
+                            if (isWin(wins, player)) {
+                                swal("Sieg für " + player, "Das Spiel hat nach "+i+" Zügen geendet");
+                                end = true;
+                            }
+                            else if (isFull(wins)) {
+                                swal("Unentschieden!", "Das Spiel hat nach "+i+" Zügen geendet");
+                                end = true;
+                            }
+                        }
+                        else {
+                            fehler.innerHTML = "Besetzt";
+                        }
+                    }
+                    else {
+                        fehler.innerHTML = "Falsches Feld";
+                    }
+                }
+            }
+        </script>
+    </head>
+    <body id = "body">
+        <a href="start.html" id = "h1">TicFracToe</a>
+        <table>
+            <tr>
+                <td class="small a on" id="small a">
+                    <table>
+                        <tr>
+                            <td onclick="place(this, 'a', 'a')" class="cell a"></td>
+                            <td onclick="place(this, 'a', 'b')" class="cell b"></td>
+                            <td onclick="place(this, 'a', 'c')" class="cell c"></td>
+                        </tr>
+                        <tr>
+                            <td onclick="place(this, 'a', 'd')" class="cell d"></td>
+                            <td onclick="place(this, 'a', 'e')" class="cell e"></td>
+                            <td onclick="place(this, 'a', 'f')" class="cell f"></td>
+                        </tr>
+                        <tr>
+                            <td onclick="place(this, 'a', 'g')" class="cell g"></td>
+                            <td onclick="place(this, 'a', 'h')" class="cell h"></td>
+                            <td onclick="place(this, 'a', 'i')" class="cell i"></td>
+                        </tr>
+                    </table>
+                </td>
+                <td  class="small b on" id="small b">
+                    <table>
+                        <tr>
+                            <td onclick="place(this, 'b', 'a')" class="cell a"></td>
+                            <td onclick="place(this, 'b', 'b')" class="cell b"></td>
+                            <td onclick="place(this, 'b', 'c')" class="cell c"></td>
+                        </tr>
+                        <tr>
+                            <td onclick="place(this, 'b', 'd')" class="cell d"></td>
+                            <td onclick="place(this, 'b', 'e')" class="cell e"></td>
+                            <td onclick="place(this, 'b', 'f')" class="cell f"></td>
+                        </tr>
+                        <tr>
+                            <td onclick="place(this, 'b', 'g')" class="cell g"></td>
+                            <td onclick="place(this, 'b', 'h')" class="cell h"></td>
+                            <td onclick="place(this, 'b', 'i')" class="cell i"></td>
+                        </tr>
+                    </table>
+                </td>
+                <td  class="small c on" id="small c">
+                    <table>
+                        <tr>
+                            <td onclick="place(this, 'c', 'a')" class="cell a"></td>
+                            <td onclick="place(this, 'c', 'b')" class="cell b"></td>
+                            <td onclick="place(this, 'c', 'c')" class="cell c"></td>
+                        </tr>
+                        <tr>
+                            <td onclick="place(this, 'c', 'd')" class="cell d"></td>
+                            <td onclick="place(this, 'c', 'e')" class="cell e"></td>
+                            <td onclick="place(this, 'c', 'f')" class="cell f"></td>
+                        </tr>
+                        <tr>
+                            <td onclick="place(this, 'c', 'g')" class="cell g"></td>
+                            <td onclick="place(this, 'c', 'h')" class="cell h"></td>
+                            <td onclick="place(this, 'c', 'i')" class="cell i"></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td  class="small d on" id="small d">
+                    <table>
+                        <tr>
+                            <td onclick="place(this, 'd', 'a')" class="cell a"></td>
+                            <td onclick="place(this, 'd', 'b')" class="cell b"></td>
+                            <td onclick="place(this, 'd', 'c')" class="cell c"></td>
+                        </tr>
+                        <tr>
+                            <td onclick="place(this, 'd', 'd')" class="cell d"></td>
+                            <td onclick="place(this, 'd', 'e')" class="cell e"></td>
+                            <td onclick="place(this, 'd', 'f')" class="cell f"></td>
+                        </tr>
+                        <tr>
+                            <td onclick="place(this, 'd', 'g')" class="cell g"></td>
+                            <td onclick="place(this, 'd', 'h')" class="cell h"></td>
+                            <td onclick="place(this, 'd', 'i')" class="cell i"></td>
+                        </tr>
+                    </table>
+                </td>
+                <td  class="small e on" id="small e">
+                    <table>
+                        <tr>
+                            <td onclick="place(this, 'e', 'a')" class="cell a"></td>
+                            <td onclick="place(this, 'e', 'b')" class="cell b"></td>
+                            <td onclick="place(this, 'e', 'c')" class="cell c"></td>
+                        </tr>
+                        <tr>
+                            <td onclick="place(this, 'e', 'd')" class="cell d"></td>
+                            <td onclick="place(this, 'e', 'e')" class="cell e"></td>
+                            <td onclick="place(this, 'e', 'f')" class="cell f"></td>
+                        </tr>
+                        <tr>
+                            <td onclick="place(this, 'e', 'g')" class="cell g"></td>
+                            <td onclick="place(this, 'e', 'h')" class="cell h"></td>
+                            <td onclick="place(this, 'e', 'i')" class="cell i"></td>
+                        </tr>
+                    </table>
+                </td>
+                <td  class="small f on" id="small f">
+                    <table>
+                        <tr>
+                            <td onclick="place(this, 'f', 'a')" class="cell a"></td>
+                            <td onclick="place(this, 'f', 'b')" class="cell b"></td>
+                            <td onclick="place(this, 'f', 'c')" class="cell c"></td>
+                        </tr>
+                        <tr>
+                            <td onclick="place(this, 'f', 'd')" class="cell d"></td>
+                            <td onclick="place(this, 'f', 'e')" class="cell e"></td>
+                            <td onclick="place(this, 'f', 'f')" class="cell f"></td>
+                        </tr>
+                        <tr>
+                            <td onclick="place(this, 'f', 'g')" class="cell g"></td>
+                            <td onclick="place(this, 'f', 'h')" class="cell h"></td>
+                            <td onclick="place(this, 'f', 'i')" class="cell i"></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td  class="small g on" id="small g">
+                    <table>
+                        <tr>
+                            <td onclick="place(this, 'g', 'a')" class="cell a"></td>
+                            <td onclick="place(this, 'g', 'b')" class="cell b"></td>
+                            <td onclick="place(this, 'g', 'c')" class="cell c"></td>
+                        </tr>
+                        <tr>
+                            <td onclick="place(this, 'g', 'd')" class="cell d"></td>
+                            <td onclick="place(this, 'g', 'e')" class="cell e"></td>
+                            <td onclick="place(this, 'g', 'f')" class="cell f"></td>
+                        </tr>
+                        <tr>
+                            <td onclick="place(this, 'g', 'g')" class="cell g"></td>
+                            <td onclick="place(this, 'g', 'h')" class="cell h"></td>
+                            <td onclick="place(this, 'g', 'i')" class="cell i"></td>
+                        </tr>
+                    </table>
+                </td>
+                <td  class="small h on" id="small h">
+                    <table>
+                        <tr>
+                            <td onclick="place(this, 'h', 'a')" class="cell a"></td>
+                            <td onclick="place(this, 'h', 'b')" class="cell b"></td>
+                            <td onclick="place(this, 'h', 'c')" class="cell c"></td>
+                        </tr>
+                        <tr>
+                            <td onclick="place(this, 'h', 'd')" class="cell d"></td>
+                            <td onclick="place(this, 'h', 'e')" class="cell e"></td>
+                            <td onclick="place(this, 'h', 'f')" class="cell f"></td>
+                        </tr>
+                        <tr>
+                            <td onclick="place(this, 'h', 'g')" class="cell g"></td>
+                            <td onclick="place(this, 'h', 'h')" class="cell h"></td>
+                            <td onclick="place(this, 'h', 'i')" class="cell i"></td>
+                        </tr>
+                    </table>
+                </td>
+                <td  class="small i on" id="small i">
+                    <table>
+                        <tr>
+                            <td onclick="place(this, 'i', 'a')" class="cell a"></td>
+                            <td onclick="place(this, 'i', 'b')" class="cell b"></td>
+                            <td onclick="place(this, 'i', 'c')" class="cell c"></td>
+                        </tr>
+                        <tr>
+                            <td onclick="place(this, 'i', 'd')" class="cell d"></td>
+                            <td onclick="place(this, 'i', 'e')" class="cell e"></td>
+                            <td onclick="place(this, 'i', 'f')" class="cell f"></td>
+                        </tr>
+                        <tr>
+                            <td onclick="place(this, 'i', 'g')" class="cell g"></td>
+                            <td onclick="place(this, 'i', 'h')" class="cell h"></td>
+                            <td onclick="place(this, 'i', 'i')" class="cell i"></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <div id="fehler"></div>
+        <div id="zug">Zug: 0</div>
+        <div id="spieler">Spieler X am Zug</div>
+    </body>
+</html>
